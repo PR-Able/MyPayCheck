@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Paycheck – Registrars</title>
+<meta name="theme-color" content="#0f5c63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Paycheck">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{--bg:#f4f6f7;--card:#fff;--ink:#16252b;--muted:#5f6f75;--line:#e1e6e8;--brand:#0f5c63;--brand2:#e6f2f2;
+--ok:#1d7a46;--okbg:#e5f4ea;--bad:#b3261e;--badbg:#fbe9e7;--warn:#8a5a00;--warnbg:#fff4dc;--info:#3a5a8c;--infobg:#e8eef8}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1517;--card:#182124;--ink:#e6eef0;--muted:#9aaeb4;--line:#26343a;--brand:#5cc3c9;--brand2:#18363a;
+--ok:#6fd39a;--okbg:#14301f;--bad:#ff8a80;--badbg:#3a1916;--warn:#ffc96b;--warnbg:#33280f;--info:#9ab8ee;--infobg:#18243a}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--brand);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 16px 10px}
+@media (prefers-color-scheme:dark){header{background:#123c40}}
+header h1{margin:0;font-size:18px;font-weight:650}
+header .sub{font-size:13px;opacity:.85}
+main{padding:12px 12px calc(84px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:5;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--muted);padding:8px 0 10px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:24px;height:24px}
+nav button.on{color:var(--brand);font-weight:600}
+.card{background:var(--card);border-radius:14px;padding:14px;margin:0 0 12px;border:1px solid var(--line)}
+.card h2{font-size:16px;margin:0 0 8px}
+.muted{color:var(--muted);font-size:14px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.btn{appearance:none;border:0;border-radius:10px;padding:11px 14px;font-size:15px;font-weight:600;background:var(--brand);color:#fff}
+@media (prefers-color-scheme:dark){.btn{color:#0f1517}}
+.btn.ghost{background:var(--brand2);color:var(--brand)}
+.btn.danger{background:var(--badbg);color:var(--bad)}
+.btn.small{padding:7px 10px;font-size:14px}
+.btn:disabled{opacity:.5}
+.full{width:100%}
+label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=checkbox]{width:22px;height:22px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.day{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:flex-start}
+.day:first-of-type{border-top:0}
+.day .d{width:52px;flex:none}
+.day .d b{display:block;font-size:15px}
+.day .d span{font-size:12px;color:var(--muted)}
+.day .e{flex:1;min-width:0}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--brand2);color:var(--brand);margin:0 4px 4px 0}
+.chip.ph{background:var(--warnbg);color:var(--warn)}
+.entry{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:10px;padding:8px 10px;margin:0 0 6px;font-size:15px}
+.entry button{border:0;background:none;color:var(--muted);font-size:20px;padding:0 4px}
+.add{border:1px dashed var(--line);background:none;color:var(--brand);border-radius:10px;padding:7px 10px;font-size:14px}
+.badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.b-ok{background:var(--okbg);color:var(--ok)}.b-bad{background:var(--badbg);color:var(--bad)}.b-warn{background:var(--warnbg);color:var(--warn)}.b-info{background:var(--infobg);color:var(--info)}
+.line{padding:10px 0;border-top:1px solid var(--line)}
+.line:first-child{border-top:0}
+.amt{font-variant-numeric:tabular-nums;font-weight:600}
+.small{font-size:13px}
+.big{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.sheet-bg{position:fixed;inset:0;background:#0007;z-index:20;display:flex;align-items:flex-end}
+.sheet{background:var(--card);width:100%;max-width:640px;margin:0 auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px 4px;font-size:14px}
+.seg button.on{border-color:var(--brand);background:var(--brand2);color:var(--brand);font-weight:600}
+.fnnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.fnnav button{border:0;background:var(--brand2);color:var(--brand);border-radius:10px;width:44px;height:40px;font-size:20px}
+.stat{background:var(--bg);border-radius:10px;padding:8px}
+.stat b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:30;font-size:14px;max-width:90%}
+textarea{width:100%;min-height:120px;font:12px monospace;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px}
+details summary{cursor:pointer;color:var(--brand);font-size:14px;margin-top:6px}
+</style>
+</head>
+<body>
+<header><h1>My Paycheck</h1><div class="sub" id="hsub">Registrar pay tracker · data stays on this phone</div></header>
+<main id="main"></main>
+<nav id="nav"></nav>
+<div id="overlay"></div>
+<script type="module">
+import * as E from './engine.js';
+import { readPayslipPdf } from './parser.js';
+
+// ---------------- storage ----------------
+const KEY = 'mypaycheck.v1';
+let storageOK = true;
+function load() {
+  try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch { storageOK = false; return null; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { storageOK = false; toast('Could not save on this device'); }
+}
+let state = load() || { profiles: [], shifts: [], payslips: [], lateFortnights: {}, phOverrides: {}, presets: null, trackFrom: null };
+state.presets ||= {
+  day: { name: 'Day', start: '08:00', end: '18:00', breakMins: 30 },
+  evening: { name: 'Evening', start: '13:30', end: '23:30', breakMins: 30 },
+  night: { name: 'Night', start: '22:00', end: '08:30', breakMins: 30 },
+};
+try { navigator.storage?.persist?.(); } catch {}
+
+// ---------------- helpers ----------------
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const money = (x) => (x < 0 ? '−$' : '$') + Math.abs(x).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const hrs = (h) => `${(+h).toFixed(2).replace(/\.?0+$/, '')} h`;
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const fmtD = (s, wd = false) => { const d = new Date(s + 'T00:00:00Z'); return `${wd ? DOW[d.getUTCDay()] + ' ' : ''}${d.getUTCDate()} ${MON[d.getUTCMonth()]}`; };
+const fmtDY = (s) => `${fmtD(s)} ${s.slice(0, 4)}`;
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const uid = () => Math.random().toString(36).slice(2, 10);
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.append(t); setTimeout(() => t.remove(), 2600); }
+const shiftHours = (s) => { const p = E.shiftPieces(s); return p.reduce((a, x) => a + x.hours, 0); };
+
+let tab = 'shifts';
+let fnView = E.fortnightStart(todayStr());
+let slipView = null;
+
+// ---------------- icons ----------------
+const ICON = {
+  shifts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+  slips: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8"/></svg>',
+  upcoming: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
+};
+function renderNav() {
+  const tabs = [['shifts', 'Shifts'], ['slips', 'Payslip check'], ['upcoming', 'Expected pay'], ['settings', 'My details']];
+  $('#nav').innerHTML = tabs.map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${ICON[k]}${n}</button>`).join('');
+}
+$('#nav').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; tab = b.dataset.tab; slipView = null; render(); window.scrollTo(0, 0); });
+
+// ---------------- computed ----------------
+function compute() {
+  const today = todayStr();
+  const until = E.addDays(today, 42);
+  const fns = E.allExpected(state, until);
+  const rec = E.reconcile(fns, state.payslips, today);
+  return { fns, rec, today };
+}
+
+// ---------------- setup ----------------
+function renderSetup(editing) {
+  const p = editing || { from: E.fortnightStart(todayStr()), level: E.SALARY_TABLE[1].level, salary: E.SALARY_TABLE[1].salary, fte: 1, cpdRate: E.DEFAULT_RULES.cpdRate };
+  return `<div class="card"><h2>${state.profiles.length ? 'Add a change to your job' : 'Welcome 👋'}</h2>
+  <p class="muted">${state.profiles.length ? 'Use this when your level or FTE changes, for example at a new rotation.' :
+    'Tell the app your level and FTE once. Everything you enter stays on this phone only. Nothing is sent anywhere.'}</p>
+  <label>Pay level</label><select id="s-level">${E.SALARY_TABLE.map((t) => `<option ${t.level === p.level ? 'selected' : ''}>${t.level}</option>`).join('')}<option value="custom" ${E.SALARY_TABLE.some((t) => t.level === p.level) ? '' : 'selected'}>Other / custom salary</option></select>
+  <label>Annual salary ($, full-time) <span class="small">from your payslip "Total Remuneration"</span></label><input id="s-salary" inputmode="decimal" value="${p.salary}">
+  <label>FTE</label><div class="seg" id="s-fte">${[1, 0.75, 0.5].map((f) => `<button data-f="${f}" class="${p.fte === f ? 'on' : ''}">${f === 1 ? 'Full-time' : f}</button>`).join('')}</div>
+  <label>Other FTE</label><input id="s-fte-x" inputmode="decimal" value="${p.fte}">
+  <label>${state.profiles.length ? 'Starting from (first day of the fortnight)' : 'Start tracking from (first day of the fortnight)'}</label><input id="s-from" type="date" value="${p.from}">
+  <details><summary>Advanced</summary><label>CPD allowance per hour ($)</label><input id="s-cpd" inputmode="decimal" value="${p.cpdRate}"></details>
+  <div style="height:12px"></div><button class="btn full" id="s-save">Save</button>
+  ${editing ? '<div style="height:8px"></div><button class="btn ghost full" id="s-cancel">Cancel</button>' : ''}</div>`;
+}
+function bindSetup(onDone) {
+  $('#s-level').onchange = (e) => { const t = E.SALARY_TABLE.find((x) => x.level === e.target.value); if (t) $('#s-salary').value = t.salary; };
+  $('#s-fte').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; $('#s-fte-x').value = b.dataset.f; [...$('#s-fte').children].forEach((x) => x.classList.toggle('on', x === b)); };
+  $('#s-save').onclick = () => {
+    const from = E.fortnightStart($('#s-from').value || todayStr());
+    const lv = $('#s-level').value;
+    const prof = { from, level: lv === 'custom' ? 'Custom' : lv, salary: +$('#s-salary').value, fte: +$('#s-fte-x').value, cpdRate: +$('#s-cpd').value };
+    if (!(prof.salary > 50000) || !(prof.fte > 0 && prof.fte <= 1.5)) return toast('Please check salary and FTE');
+    state.profiles = state.profiles.filter((x) => x.from !== from).concat(prof).sort((a, b) => a.from.localeCompare(b.from));
+    if (!state.trackFrom || from < state.trackFrom) state.trackFrom = from;
+    save(); toast('Saved'); onDone();
+  };
+  const c = $('#s-cancel'); if (c) c.onclick = onDone;
+}
+
+// ---------------- shifts tab ----------------
+function renderShifts() {
+  const fn = E.calcFortnight(fnView, state.shifts, state);
+  const end = E.fortnightEnd(fnView);
+  const late = !!state.lateFortnights[fnView];
+  let days = '';
+  for (let i = 0; i < 14; i++) {
+    const d = E.addDays(fnView, i);
+    const ph = E.TAS_PUBLIC_HOLIDAYS[d];
+    const entries = state.shifts.filter((s) => s.date === d);
+    if (i === 7) days += `<div class="muted small" style="padding:8px 0 2px;font-weight:600">Week 2</div>`;
+    days += `<div class="day"><div class="d"><b>${DOW[E.weekday(d)]}</b><span>${fmtD(d)}</span></div><div class="e">
+      ${ph ? `<span class="chip ph">Public holiday · ${esc(ph)}</span>` : ''}
+      ${entries.map((s) => `<div class="entry"><span>${s.kind === 'leave' ? `🌴 ${esc(E.LEAVE_TYPES[s.leaveType])} · ${hrs(s.hours)}` :
+        `${s.kind === 'training' ? '📚 Training ' : ''}${esc(s.label || '')} ${s.start}–${s.end} · ${hrs(shiftHours(s))}`}</span>
+        <button data-del="${s.id}" aria-label="Delete">×</button></div>`).join('')}
+      <button class="add" data-addday="${d}">+ Add</button></div></div>`;
+  }
+  const extras = fn.lines.filter((l) => l.due === fn.extrasPay);
+  const base = fn.lines.filter((l) => l.due === fn.basePay);
+  const sum = (a) => a.reduce((x, l) => x + l.amount, 0);
+  return `<div class="card"><div class="fnnav"><button id="fn-prev" aria-label="Previous fortnight">‹</button>
+    <div style="text-align:center"><b>${fmtD(fnView)} – ${fmtDY(end)}</b><div class="muted small">Pay fortnight · ${esc(fn.profile.level)} · ${fn.profile.fte} FTE</div></div>
+    <button id="fn-next" aria-label="Next fortnight">›</button></div>
+    <div class="grid3"><div class="stat"><b>${hrs(fn.summary.worked)}</b><span>worked</span></div>
+    <div class="stat"><b>${hrs(fn.summary.additional)}</b><span>additional</span></div>
+    <div class="stat"><b>${hrs(fn.summary.excess)}</b><span>overtime</span></div></div>
+    <label class="row" style="color:var(--ink);margin-top:12px"><input type="checkbox" id="late" ${late ? 'checked' : ''}> Timesheet submitted late</label></div>
+  <div class="card">${days}</div>
+  <div class="card"><h2>What this fortnight should pay</h2>
+    <div class="line"><div class="row between"><span>Base pay on <b>${fmtD(fn.basePay, true)}</b></span><span class="amt">${money(sum(base))}</span></div>
+    <div class="muted small">${base.map((l) => `${esc(l.label)} ${hrs(l.hours)}`).join(' · ')}</div></div>
+    <div class="line"><div class="row between"><span>Extras on <b>${fmtD(fn.extrasPay, true)}</b>${late ? ' (late timesheet)' : ''}</span><span class="amt">${money(sum(extras))}</span></div>
+    <div class="muted small">${extras.length ? extras.map((l) => `${esc(l.label)} ${hrs(l.hours)} = ${money(l.amount)}`).join('<br>') : 'No extra hours or penalties logged yet.'}</div></div>
+    <p class="muted small">Gross amounts before tax. Extras (additional hours, penalties, overtime) are paid one cycle after the fortnight, or two if the timesheet was late.</p></div>`;
+}
+function bindShifts() {
+  $('#fn-prev').onclick = () => { fnView = E.addDays(fnView, -14); render(); };
+  $('#fn-next').onclick = () => { fnView = E.addDays(fnView, 14); render(); };
+  $('#late').onchange = (e) => { if (e.target.checked) state.lateFortnights[fnView] = true; else delete state.lateFortnights[fnView]; save(); render(); };
+  $('#main').onclick = (e) => {
+    const del = e.target.closest('[data-del]');
+    if (del) { state.shifts = state.shifts.filter((s) => s.id !== del.dataset.del); save(); render(); return; }
+    const add = e.target.closest('[data-addday]');
+    if (add) openShiftSheet(add.dataset.addday);
+  };
+}
+function openShiftSheet(date) {
+  let kind = 'day';
+  const P = state.presets;
+  const draw = () => {
+    const isLeave = kind === 'leave';
+    const pr = P[kind] || (kind === 'training' ? { start: '08:00', end: '17:00', breakMins: 30 } : { start: '08:00', end: '17:00', breakMins: 0 });
+    $('#overlay').innerHTML = `<div class="sheet-bg" id="sbg"><div class="sheet"><div class="row between"><h2 style="margin:0">${fmtD(date, true)}</h2><button class="btn ghost small" id="x">Close</button></div>
+      ${E.TAS_PUBLIC_HOLIDAYS[date] ? `<p><span class="chip ph">Public holiday · ${esc(E.TAS_PUBLIC_HOLIDAYS[date])}</span></p>` : ''}
+      <label>What was it?</label><div class="seg" id="kinds">${[['day', 'Day'], ['evening', 'Evening'], ['night', 'Night'], ['custom', 'Other shift'], ['training', 'Training'], ['leave', 'Leave']]
+        .map(([k, n]) => `<button data-k="${k}" class="${k === kind ? 'on' : ''}">${n}</button>`).join('')}</div>
+      ${isLeave ? `<label>Leave type</label><select id="lt">${Object.entries(E.LEAVE_TYPES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
+        <label>Hours</label><input id="lh" inputmode="decimal" value="${(43 * (E.profileOn(state.profiles, date)?.fte || 1) / 5).toFixed(2)}">` :
+      `<div class="grid2"><div><label>Start</label><input type="time" id="st" value="${pr.start}"></div><div><label>Finish</label><input type="time" id="en" value="${pr.end}"></div></div>
+       <label>Unpaid break (minutes)</label><input id="br" inputmode="numeric" value="${pr.breakMins}">
+       ${kind === 'training' ? '<p class="muted small">Training time is part of your contracted hours, so it does not count towards overtime.</p>' : ''}
+       <p class="muted small" id="calc"></p>`}
+      <div style="height:12px"></div><button class="btn full" id="ok">Add</button>
+      ${['day', 'evening', 'night'].includes(kind) ? '<div style="height:8px"></div><button class="btn ghost full small" id="setpre">Save these times as my usual ' + P[kind].name + ' shift</button>' : ''}
+      </div></div>`;
+    const upd = () => { const c = $('#calc'); if (c) c.textContent = `${hrs(shiftHours({ date, start: $('#st').value, end: $('#en').value, breakMins: +$('#br').value }))} paid`; };
+    if (!isLeave) { ['st', 'en', 'br'].forEach((id) => $('#' + id).oninput = upd); upd(); }
+    $('#kinds').onclick = (e) => { const b = e.target.closest('button'); if (b) { kind = b.dataset.k; draw(); } };
+    $('#x').onclick = close; $('#sbg').onclick = (e) => { if (e.target.id === 'sbg') close(); };
+    const sp = $('#setpre'); if (sp) sp.onclick = () => { P[kind] = { ...P[kind], start: $('#st').value, end: $('#en').value, breakMins: +$('#br').value }; save(); toast('Saved as usual ' + P[kind].name + ' shift'); };
+    $('#ok').onclick = () => {
+      if (isLeave) {
+        const h = +$('#lh').value; if (!(h > 0)) return toast('Enter the hours');
+        state.shifts.push({ id: uid(), date, kind: 'leave', leaveType: $('#lt').value, hours: h });
+      } else {
+        const s = { id: uid(), date, kind: kind === 'training' ? 'training' : 'work', start: $('#st').value, end: $('#en').value, breakMins: +$('#br').value || 0, label: P[kind]?.name || (kind === 'training' ? '' : 'Shift') };
+        if (!s.start || !s.end) return toast('Enter start and finish');
+        state.shifts.push(s);
+      }
+      save(); close(); render();
+    };
+  };
+  const close = () => { $('#overlay').innerHTML = ''; };
+  draw();
+}
+
+// ---------------- payslips tab ----------------
+const STATUS = {
+  match: ['b-ok', 'Matches'], missing: ['b-bad', 'Missing'], under: ['b-bad', 'Underpaid'], over: ['b-warn', 'More than expected'], info: ['b-info', 'Info'],
+};
+function renderSlips(C) {
+  if (slipView) return renderSlipDetail(C, slipView);
+  const list = [...C.rec.results].reverse();
+  return `<div class="card"><h2>Check a payslip</h2><p class="muted">Pick the payslip PDF from your email or Files. The app reads each line and compares it with the shifts you logged.</p>
+    <input type="file" id="pdf" accept="application/pdf" multiple style="display:none"><button class="btn full" id="pick">Import payslip PDF</button>
+    <p class="muted small">Only the pay lines are kept on this phone. The PDF itself isn't stored.</p></div>
+    ${list.length ? list.map((r) => {
+      const s = r.slip; const bad = r.problems;
+      return `<div class="card" data-slip="${s.payDate}" style="cursor:pointer"><div class="row between"><div><b>Paid ${fmtDY(s.payDate)}</b><div class="muted small">Period ${fmtD(s.periodStart)} – ${fmtD(s.periodEnd)} · gross ${money(s.gross ?? s.linesTotal)}</div></div>
+      <span class="badge ${bad ? 'b-bad' : 'b-ok'}">${bad ? `${bad} to check` : 'All good'}</span></div></div>`;
+    }).join('') : '<p class="muted" style="text-align:center">No payslips imported yet.</p>'}`;
+}
+function explain(c, slip) {
+  const fnTxt = (list) => [...new Set(list.map((i) => i.fn))].map((f) => `${fmtD(f)}–${fmtD(E.fortnightEnd(f))}`).join(', ');
+  const parts = [];
+  if (c.status === 'match' && c.expected > 0) parts.push(`Matches what you should be paid for ${fnTxt(c.scheduled)}.`);
+  if (c.status === 'missing') parts.push(`Not on this payslip. You should have been paid ${money(c.expected)} for ${fnTxt(c.scheduled)}. It stays on your <b>Still owed</b> list in case it comes later.`);
+  if (c.status === 'under') parts.push(`Paid ${money(c.paid - c.catchUpTotal)} but should be ${money(c.expected)}: <b>${money(-c.diff)} short</b>.`);
+  if (c.catchUpTotal > 0.005) parts.push(`Includes ${money(c.catchUpTotal)} owed from earlier (${fnTxt(c.catchUp)}).`);
+  if (c.status === 'over') parts.push(`${money(c.leftover)} more than your logged shifts explain. Check you've logged every shift for that fortnight.`);
+  if (c.cat === 'backpay') parts.push('Backpay, usually from a pay rise. The app can\'t check it yet.');
+  if (c.cat === 'lwop') parts.push('Leave without pay ($0). Normal Pay should drop by the same hours.');
+  for (const ri of c.rateIssues) parts.push(`⚠ Rate on payslip is $${ri.line.rate.toFixed(2)}/h but your rate is $${ri.expectedRate.toFixed(2)}/h (could be a pay rise not applied yet; check backpay).`);
+  return parts.join(' ');
+}
+function renderSlipDetail(C, payDate) {
+  const r = C.rec.results.find((x) => x.slip.payDate === payDate);
+  if (!r) { slipView = null; return renderSlips(C); }
+  const s = r.slip;
+  return `<button class="btn ghost small" id="back">‹ All payslips</button><div style="height:10px"></div>
+  <div class="card"><h2>Payslip paid ${fmtDY(s.payDate)}</h2><div class="muted small">Period ${fmtD(s.periodStart)} – ${fmtDY(s.periodEnd)} · ${esc(s.classification || '')}</div>
+  <div class="grid3" style="margin-top:10px"><div class="stat"><b>${money(s.gross ?? s.linesTotal)}</b><span>gross</span></div><div class="stat"><b>${money(s.tax ?? 0)}</b><span>tax</span></div><div class="stat"><b>${money(s.net ?? 0)}</b><span>net</span></div></div></div>
+  <div class="card"><h2>Line by line</h2>${r.checks.map((c) => {
+    const [cls, txt] = STATUS[c.status]; const flag = c.rateIssues.length && c.status === 'match' ? ['b-warn', 'Check rate'] : [cls, txt];
+    return `<div class="line"><div class="row between"><b>${esc(c.label)}</b><span class="badge ${flag[0]}">${flag[1]}</span></div>
+    ${c.lines.map((l) => `<div class="row between small"><span>${esc(l.desc)} · ${l.hours} h × $${l.rate.toFixed(2)}${l.from ? ` · ${fmtD(l.from)}` : ''}</span><span class="amt">${money(l.amount)}</span></div>`).join('')}
+    ${c.lines.length === 0 ? '<div class="small muted">Not on payslip</div>' : ''}
+    <div class="small" style="margin-top:4px">${explain(c, s)}</div></div>`;
+  }).join('')}</div>
+  <button class="btn danger full" id="rm">Remove this payslip</button>`;
+}
+function bindSlips() {
+  const pick = $('#pick');
+  if (pick) { pick.onclick = () => $('#pdf').click(); $('#pdf').onchange = (e) => importPdfs([...e.target.files]); }
+  $('#main').onclick = (e) => { const c = e.target.closest('[data-slip]'); if (c) { slipView = c.dataset.slip; render(); window.scrollTo(0, 0); } };
+  const back = $('#back'); if (back) back.onclick = () => { slipView = null; render(); };
+  const rm = $('#rm'); if (rm) rm.onclick = () => { if (rm.dataset.sure) { state.payslips = state.payslips.filter((p) => p.payDate !== slipView); slipView = null; save(); render(); } else { rm.dataset.sure = 1; rm.textContent = 'Tap again to remove'; } };
+}
+let pdfjs;
+async function importPdfs(files) {
+  if (!files.length) return;
+  toast('Reading payslip…');
+  try {
+    if (!pdfjs) { pdfjs = await import('./pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL('./pdf.worker.min.mjs', import.meta.url).href; }
+  } catch (err) { toast('Could not load the PDF reader'); return; }
+  let n = 0, bad = 0;
+  for (const f of files) {
+    try {
+      const p = await readPayslipPdf(pdfjs, await f.arrayBuffer());
+      if (!p.ok) { bad++; continue; }
+      delete p.ok;
+      state.payslips = state.payslips.filter((x) => x.payDate !== p.payDate).concat(p);
+      if (!state.profiles.length && p.annualSalary) {
+        const t = E.SALARY_TABLE.find((x) => x.salary === p.annualSalary);
+        state.profiles.push({ from: p.periodStart, level: p.classification || t?.level || 'Custom', salary: p.annualSalary, fte: 1, cpdRate: E.DEFAULT_RULES.cpdRate });
+      }
+      n++;
+    } catch { bad++; }
+  }
+  save();
+  toast(`${n} payslip${n === 1 ? '' : 's'} imported${bad ? `, ${bad} not recognised` : ''}`);
+  if (n === 1) slipView = state.payslips.slice(-1)[0].payDate;
+  render();
+}
+
+// ---------------- upcoming tab ----------------
+function renderUpcoming(C) {
+  const fc = E.forecast(C.rec.outstanding, C.today);
+  const overdue = fc.find((x) => x.date === 'overdue');
+  const noslip = fc.find((x) => x.date === 'noslip');
+  const next = fc.filter((x) => x.date !== 'overdue' && x.date !== 'noslip').slice(0, 4);
+  const itemList = (items) => items.map((i) => `<div class="row between small"><span>${esc(i.label)} ${hrs(i.hours)} <span class="muted">· ${fmtD(i.fn)}–${fmtD(E.fortnightEnd(i.fn))}</span></span><span class="amt">${money(i.owed)}</span></div>`).join('');
+  return `${next.length ? `<div class="card"><div class="muted small">Next payday · ${fmtD(next[0].date, true)} ${next[0].date.slice(0, 4)}</div><div class="big">${money(next[0].total)}</div><div class="muted small">expected gross, before tax</div>
+    <div style="margin-top:8px">${itemList(next[0].items)}</div></div>` : ''}
+    ${next.slice(1).map((p) => `<div class="card"><div class="row between"><b>${fmtD(p.date, true)} ${p.date.slice(0, 4)}</b><span class="amt">${money(p.total)}</span></div><div style="margin-top:6px">${itemList(p.items)}</div></div>`).join('')}
+    ${overdue ? `<div class="card" style="border-color:var(--bad)"><div class="row between"><h2 style="margin:0">Still owed</h2><span class="amt" style="color:var(--bad)">${money(overdue.total)}</span></div>
+      <p class="muted small">Should already have been paid but isn't on any payslip you've imported. If you haven't imported that payslip yet, import it to clear these.</p>${itemList(overdue.items.sort((a, b) => a.due.localeCompare(b.due)))}</div>` : ''}
+    ${noslip ? `<div class="card"><details><summary>Past paydays with no payslip imported (${money(noslip.total)})</summary>
+      <p class="muted small">Import those payslips to check them. Until then the app can't tell if they were paid.</p>${itemList(noslip.items.sort((a, b) => a.due.localeCompare(b.due)))}</details></div>` : ''}
+    ${!next.length && !overdue ? '<p class="muted" style="text-align:center">Log some shifts to see your expected pay.</p>' : ''}`;
+}
+
+// ---------------- settings tab ----------------
+function renderSettings() {
+  return `<div class="card"><h2>My job</h2>${state.profiles.map((p) => `<div class="line"><div class="row between"><b>From ${fmtDY(p.from)}</b><button class="btn ghost small" data-delp="${p.from}">Remove</button></div>
+    <div class="muted small">${esc(p.level)} · $${p.salary.toLocaleString()} · ${p.fte} FTE · rate $${E.hourlyRate(p).toFixed(2)}/h · CPD $${p.cpdRate}/h</div></div>`).join('')}
+    <div style="height:8px"></div><button class="btn ghost full" id="addp">+ My level or FTE changed</button></div>
+  <div class="card"><h2>Backup</h2><p class="muted small">Your data only lives on this phone. If you delete the app or change phones, it's gone. The app reminds you to back up every week.</p>
+    <p class="small"><b>Last backup:</b> ${state.lastBackup ? fmtDY(state.lastBackup.slice(0, 10)) : 'never'}</p>
+    <div class="grid2"><button class="btn ghost" id="exp">Save backup</button><button class="btn ghost" id="imp">Restore backup</button></div>
+    <input type="file" id="impf" accept="application/json,.json,.txt" style="display:none">
+    <details><summary>Copy or paste backup as text</summary><textarea id="bk"></textarea><div class="grid2"><button class="btn ghost small" id="cp">Copy</button><button class="btn ghost small" id="ps">Restore from text</button></div></details></div>
+  <div class="card"><h2>How pay is worked out</h2><div class="muted small">
+    <p>Hourly rate = annual salary ÷ 2,244.6 (43 h × 52.2 weeks), the same as payroll.</p>
+    <p>Normal Pay = 86 h × FTE each fortnight, less any leave. Hours you work above your FTE, up to full-time (76 service hours), are <b>Additional Hours</b> at 100%, plus Training Time of 5/38 of those hours. Hours beyond 76 are <b>Overtime</b>: ×1.25 on weekdays, ×1.5 on weekends, ×1.5 or ×2.5 on public holidays, and ×2 beyond 120 h.</p>
+    <p>Penalties: +25% on weekday hours 7pm–7am, +50% on Saturday and Sunday, +150% on public holidays.</p>
+    <p>Base pay is paid on the Wednesday after the fortnight. Extras come one cycle later, or two if the timesheet was late.</p>
+    <p>This is a guide built from real payslips and the Medical Practitioners Agreement. It isn't official payroll advice.</p></div></div>
+  <div class="card"><button class="btn danger full" id="wipe">Delete all my data</button></div>
+  ${storageOK ? '' : '<p class="muted small">⚠ This browser is not letting the app save data. Install it to your home screen.</p>'}`;
+}
+function bindSettings() {
+  $('#addp').onclick = () => { $('#main').innerHTML = renderSetup({ ...state.profiles.slice(-1)[0], from: E.fortnightStart(todayStr()) }); bindSetup(render); };
+  $('#main').onclick = (e) => { const d = e.target.closest('[data-delp]'); if (d) { if (state.profiles.length === 1) return toast('Keep at least one'); state.profiles = state.profiles.filter((p) => p.from !== d.dataset.delp); save(); render(); } };
+  const json = backupJson;
+  $('#exp').onclick = doBackup;
+  const restore = (txt) => { try { const o = JSON.parse(txt); if (o.app !== 'mypaycheck') throw 0; state = o.state; save(); toast('Backup restored'); render(); } catch { toast('That is not a My Paycheck backup'); } };
+  $('#imp').onclick = () => $('#impf').click();
+  $('#impf').onchange = async (e) => { const f = e.target.files[0]; if (f) restore(await f.text()); };
+  $('#bk').value = json();
+  $('#cp').onclick = () => navigator.clipboard?.writeText($('#bk').value).then(() => { toast('Copied. Paste it into a note or email to keep it'); markBackedUp(); }, () => toast('Select the text and copy it'));
+  $('#ps').onclick = () => restore($('#bk').value);
+  const w = $('#wipe'); w.onclick = () => { if (w.dataset.sure) { try { localStorage.removeItem(KEY); } catch {} location.reload(); } else { w.dataset.sure = 1; w.textContent = 'Tap again: this deletes everything'; } };
+}
+
+// ---------------- backup ----------------
+const backupJson = () => JSON.stringify({ app: 'mypaycheck', v: 1, saved: new Date().toISOString(), state });
+const WEEK = 7 * 86400000;
+function markBackedUp() { state.lastBackup = new Date().toISOString(); delete state.backupSnooze; save(); render(); }
+async function doBackup() {
+  const txt = backupJson();
+  const blob = new Blob([txt], { type: 'application/json' });
+  const file = new File([blob], `mypaycheck-backup-${todayStr()}.json`, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'My Paycheck backup' }); markBackedUp(); toast('Backup saved'); } catch { toast('Backup not saved'); }
+    return;
+  }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); markBackedUp(); toast('Backup file saved'); }
+  catch { toast('Use "Copy backup as text" in My details'); }
+}
+function backupDue() {
+  if (!state.shifts.length && !state.payslips.length) return false;
+  const now = Date.now();
+  if (state.backupSnooze && now < Date.parse(state.backupSnooze)) return false;
+  return !state.lastBackup || now - Date.parse(state.lastBackup) > WEEK;
+}
+const isInstalled = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+function banners() {
+  let h = '';
+  if (backupDue()) {
+    const ago = state.lastBackup ? `Your last backup was ${Math.floor((Date.now() - Date.parse(state.lastBackup)) / 86400000)} days ago.` : "You haven't backed up yet.";
+    h += `<div class="card" style="border-color:var(--warn);background:var(--warnbg)"><b>Weekly backup</b><p class="small" style="margin:4px 0 10px">${ago} Your data only lives on this phone. Save a copy to Files, iCloud Drive or email in case the phone is lost or replaced.</p>
+      <div class="grid2"><button class="btn" id="bk-now">Back up now</button><button class="btn ghost" id="bk-later">Tomorrow</button></div></div>`;
+  }
+  if (!isInstalled() && !state.installTipDismissed) {
+    h += `<div class="card" style="background:var(--infobg);border-color:var(--info)"><b>Add to your home screen</b><p class="small" style="margin:4px 0 10px">So the app works offline and your data is kept safe. iPhone: tap Share, then <b>Add to Home Screen</b>. Android: tap ⋮, then <b>Install app</b>.</p>
+      <button class="btn ghost small" id="tip-x">Got it</button></div>`;
+  }
+  return h;
+}
+function bindBanners() {
+  const n = $('#bk-now'); if (n) n.onclick = doBackup;
+  const l = $('#bk-later'); if (l) l.onclick = () => { state.backupSnooze = new Date(Date.now() + 86400000).toISOString(); save(); render(); };
+  const x = $('#tip-x'); if (x) x.onclick = () => { state.installTipDismissed = true; save(); render(); };
+}
+
+// ---------------- render ----------------
+function render() {
+  renderNav();
+  $('#main').onclick = null;
+  if (!state.profiles.length) {
+    $('#nav').style.display = 'none';
+    $('#main').innerHTML = renderSetup() + `<div class="card"><h2>Or start from a payslip</h2><p class="muted small">Import a recent payslip and the app will fill in your salary for you.</p>
+      <input type="file" id="pdf" accept="application/pdf" style="display:none"><button class="btn ghost full" id="pick">Import payslip PDF</button></div>`;
+    bindSetup(() => { fnView = E.fortnightStart(todayStr()); render(); });
+    $('#pick').onclick = () => $('#pdf').click(); $('#pdf').onchange = (e) => importPdfs([...e.target.files]);
+    return;
+  }
+  $('#nav').style.display = '';
+  const C = compute();
+  const owed = C.rec.outstanding.filter((o) => o.status === 'overdue').reduce((a, o) => a + o.owed, 0);
+  $('#hsub').textContent = owed > 1 ? `Still owed: ${money(owed)} · see Expected pay` : 'Registrar pay tracker · data stays on this phone';
+  if (tab === 'shifts') { $('#main').innerHTML = renderShifts(); bindShifts(); }
+  if (tab === 'slips') { $('#main').innerHTML = renderSlips(C); bindSlips(); }
+  if (tab === 'upcoming') { $('#main').innerHTML = renderUpcoming(C); }
+  if (tab === 'settings') { $('#main').innerHTML = renderSettings(); bindSettings(); }
+  const b = banners();
+  if (b) { $('#main').insertAdjacentHTML('afterbegin', b); bindBanners(); }
+}
+render();
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

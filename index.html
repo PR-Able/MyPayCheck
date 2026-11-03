@@ -43,6 +43,9 @@ input,select{width:100%;font-size:16px;padding:10px;border-radius:10px;border:1p
 input[type=checkbox]{width:22px;height:22px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+@media (max-width:370px){.grid4{grid-template-columns:1fr 1fr}}
+.grid4 .stat b{font-size:16px}
 .day{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:flex-start}
 .day:first-of-type{border-top:0}
 .day .d{width:52px;flex:none}
@@ -95,6 +98,8 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { storageOK = false; toast('Could not save on this device'); }
 }
 let state = load() || { profiles: [], shifts: [], payslips: [], lateFortnights: {}, phOverrides: {}, presets: null, trackFrom: null };
+state.lateFortnights ||= {};
+state.trainingOverrides ||= {};
 state.presets ||= {
   day: { name: 'Day', start: '08:00', end: '18:00', breakMins: 30 },
   evening: { name: 'Evening', start: '13:30', end: '23:30', breakMins: 30 },
@@ -176,7 +181,7 @@ function bindSetup(onDone) {
 function renderShifts() {
   const fn = E.calcFortnight(fnView, state.shifts, state);
   const end = E.fortnightEnd(fnView);
-  const late = !!state.lateFortnights[fnView];
+  const late = fn.lateWeeks > 0;
   let days = '';
   for (let i = 0; i < 14; i++) {
     const d = E.addDays(fnView, i);
@@ -186,7 +191,7 @@ function renderShifts() {
     days += `<div class="day"><div class="d"><b>${DOW[E.weekday(d)]}</b><span>${fmtD(d)}</span></div><div class="e">
       ${ph ? `<span class="chip ph">Public holiday · ${esc(ph)}</span>` : ''}
       ${entries.map((s) => `<div class="entry"><span>${s.kind === 'leave' ? `🌴 ${esc(E.LEAVE_TYPES[s.leaveType])} · ${hrs(s.hours)}` :
-        `${s.kind === 'training' ? '📚 Training ' : ''}${esc(s.label || '')} ${s.start}–${s.end} · ${hrs(shiftHours(s))}`}</span>
+        `${s.kind === 'training' ? '📚 Training (not counted, now automatic) ' : ''}${esc(s.label || '')} ${s.start}–${s.end} · ${hrs(shiftHours(s))}`}</span>
         <button data-del="${s.id}" aria-label="Delete">×</button></div>`).join('')}
       <button class="add" data-addday="${d}">+ Add</button></div></div>`;
   }
@@ -196,27 +201,53 @@ function renderShifts() {
   return `<div class="card"><div class="fnnav"><button id="fn-prev" aria-label="Previous fortnight">‹</button>
     <div style="text-align:center"><b>${fmtD(fnView)} – ${fmtDY(end)}</b><div class="muted small">Pay fortnight · ${esc(fn.profile.level)} · ${fn.profile.fte} FTE</div></div>
     <button id="fn-next" aria-label="Next fortnight">›</button></div>
-    <div class="grid3"><div class="stat"><b>${hrs(fn.summary.worked)}</b><span>worked</span></div>
+    <div class="grid4"><div class="stat"><b>${hrs(fn.summary.worked)}</b><span>worked</span></div>
+    <div class="stat"><b>${hrs(fn.summary.leave)}</b><span>leave</span></div>
     <div class="stat"><b>${hrs(fn.summary.additional)}</b><span>additional</span></div>
     <div class="stat"><b>${hrs(fn.summary.excess)}</b><span>overtime</span></div></div>
-    <label class="row" style="color:var(--ink);margin-top:12px"><input type="checkbox" id="late" ${late ? 'checked' : ''}> Timesheet submitted late</label></div>
+    <div class="muted small" style="margin-top:6px">Worked + leave = <b>${hrs(fn.summary.worked + fn.summary.leave)}</b>${fn.summary.leave > 0 ? ` (${Object.entries(fn.summary.leaveByType).map(([k, h]) => `${esc(E.LEAVE_TYPES[k] || 'Leave')} ${hrs(h)}`).join(', ')})` : ''}. Your contract is ${hrs(fn.summary.contractedService)} of service a fortnight.</div>
+    <div class="row between" style="margin-top:10px"><span class="small">📚 Training <b>${hrs(fn.summary.training)}</b> <span class="muted">${fn.summary.trainingOverridden ? '· changed for this fortnight' : `· added automatically (${fn.profile.fte} FTE)`}</span></span><button class="btn ghost small" id="train">Change</button></div>
+    <label class="row" style="color:var(--ink);margin-top:12px"><input type="checkbox" id="late" ${late ? 'checked' : ''}> Timesheet submitted late</label>
+    ${late ? `<div class="row" style="gap:8px;margin-top:6px"><span class="small">How late?</span><select id="lateW" style="width:auto;flex:1">${[1, 2, 3, 4, 5, 6].map((w) => `<option value="${w}" ${Math.min(fn.lateWeeks, 6) === w ? 'selected' : ''}>${w === 6 ? '6 or more weeks' : `${w} week${w > 1 ? 's' : ''}`}</option>`).join('')}</select></div>
+      <div class="muted small" style="margin-top:4px">Extras now expected on ${fmtD(fn.extrasPay, true)} instead of ${fmtD(E.extrasPayDateFor(fnView, 0), true)}.</div>` : ''}</div>
   <div class="card">${days}</div>
   <div class="card"><h2>What this fortnight should pay</h2>
     <div class="line"><div class="row between"><span>Base pay on <b>${fmtD(fn.basePay, true)}</b></span><span class="amt">${money(sum(base))}</span></div>
     <div class="muted small">${base.map((l) => `${esc(l.label)} ${hrs(l.hours)}`).join(' · ')}</div></div>
-    <div class="line"><div class="row between"><span>Extras on <b>${fmtD(fn.extrasPay, true)}</b>${late ? ' (late timesheet)' : ''}</span><span class="amt">${money(sum(extras))}</span></div>
+    <div class="line"><div class="row between"><span>Extras on <b>${fmtD(fn.extrasPay, true)}</b>${late ? ` (timesheet ${fn.lateWeeks >= 6 ? '6+' : fn.lateWeeks} wk late)` : ''}</span><span class="amt">${money(sum(extras))}</span></div>
     <div class="muted small">${extras.length ? extras.map((l) => `${esc(l.label)} ${hrs(l.hours)} = ${money(l.amount)}`).join('<br>') : 'No extra hours or penalties logged yet.'}</div></div>
-    <p class="muted small">Gross amounts before tax. Extras (additional hours, penalties, overtime) are paid one cycle after the fortnight, or two if the timesheet was late.</p></div>`;
+    <p class="muted small">Gross amounts before tax. Training time is included in Normal Pay. Extras (additional hours, penalties, overtime) are paid one cycle after the fortnight. A late timesheet adds one more cycle for every 2 weeks late, or part of 2 weeks.</p></div>`;
 }
 function bindShifts() {
   $('#fn-prev').onclick = () => { fnView = E.addDays(fnView, -14); render(); };
   $('#fn-next').onclick = () => { fnView = E.addDays(fnView, 14); render(); };
-  $('#late').onchange = (e) => { if (e.target.checked) state.lateFortnights[fnView] = true; else delete state.lateFortnights[fnView]; save(); render(); };
+  $('#late').onchange = (e) => { if (e.target.checked) state.lateFortnights[fnView] = 1; else delete state.lateFortnights[fnView]; save(); render(); };
+  const lw = $('#lateW'); if (lw) lw.onchange = (e) => { state.lateFortnights[fnView] = +e.target.value; save(); render(); };
+  $('#train').onclick = () => openTrainingSheet(fnView);
   $('#main').onclick = (e) => {
     const del = e.target.closest('[data-del]');
     if (del) { state.shifts = state.shifts.filter((s) => s.id !== del.dataset.del); save(); render(); return; }
     const add = e.target.closest('[data-addday]');
     if (add) openShiftSheet(add.dataset.addday);
+  };
+}
+function openTrainingSheet(fnStart) {
+  const fte = E.profileOn(state.profiles, fnStart).fte;
+  const auto = E.DEFAULT_RULES.fullTimeTrainingHours * fte;
+  const cur = E.trainingHoursFor(state, fnStart, fte);
+  const close = () => { $('#overlay').innerHTML = ''; };
+  $('#overlay').innerHTML = `<div class="sheet-bg" id="sbg"><div class="sheet"><div class="row between"><h2 style="margin:0">Training time</h2><button class="btn ghost small" id="x">Close</button></div>
+    <p class="muted small">Payroll adds training time to your pay automatically, based on your FTE: ${hrs(auto)} a fortnight at ${fte} FTE. You don't need to put it on your timesheet. Only change it if this fortnight was different.</p>
+    <label>Training hours for ${fmtD(fnStart)} – ${fmtD(E.fortnightEnd(fnStart))}</label><input id="th" inputmode="decimal" value="${+cur.toFixed(2)}">
+    <div style="height:12px"></div><button class="btn full" id="ok">Save</button>
+    <div style="height:8px"></div><button class="btn ghost full" id="auto">Use automatic (${hrs(auto)})</button></div></div>`;
+  $('#x').onclick = close; $('#sbg').onclick = (e) => { if (e.target.id === 'sbg') close(); };
+  $('#auto').onclick = () => { delete state.trainingOverrides[fnStart]; save(); close(); render(); };
+  $('#ok').onclick = () => {
+    const h = +$('#th').value;
+    if (!(h >= 0) || $('#th').value.trim() === '') return toast('Enter the hours');
+    if (Math.abs(h - auto) < 1e-9) delete state.trainingOverrides[fnStart]; else state.trainingOverrides[fnStart] = h;
+    save(); close(); render();
   };
 }
 function openShiftSheet(date) {
@@ -227,13 +258,12 @@ function openShiftSheet(date) {
     const pr = P[kind] || (kind === 'training' ? { start: '08:00', end: '17:00', breakMins: 30 } : { start: '08:00', end: '17:00', breakMins: 0 });
     $('#overlay').innerHTML = `<div class="sheet-bg" id="sbg"><div class="sheet"><div class="row between"><h2 style="margin:0">${fmtD(date, true)}</h2><button class="btn ghost small" id="x">Close</button></div>
       ${E.TAS_PUBLIC_HOLIDAYS[date] ? `<p><span class="chip ph">Public holiday · ${esc(E.TAS_PUBLIC_HOLIDAYS[date])}</span></p>` : ''}
-      <label>What was it?</label><div class="seg" id="kinds">${[['day', 'Day'], ['evening', 'Evening'], ['night', 'Night'], ['custom', 'Other shift'], ['training', 'Training'], ['leave', 'Leave']]
+      <label>What was it?</label><div class="seg" id="kinds">${[['day', 'Day'], ['evening', 'Evening'], ['night', 'Night'], ['custom', 'Other shift'], ['leave', 'Leave']]
         .map(([k, n]) => `<button data-k="${k}" class="${k === kind ? 'on' : ''}">${n}</button>`).join('')}</div>
       ${isLeave ? `<label>Leave type</label><select id="lt">${Object.entries(E.LEAVE_TYPES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
         <label>Hours</label><input id="lh" inputmode="decimal" value="${(43 * (E.profileOn(state.profiles, date)?.fte || 1) / 5).toFixed(2)}">` :
       `<div class="grid2"><div><label>Start</label><input type="time" id="st" value="${pr.start}"></div><div><label>Finish</label><input type="time" id="en" value="${pr.end}"></div></div>
        <label>Unpaid break (minutes)</label><input id="br" inputmode="numeric" value="${pr.breakMins}">
-       ${kind === 'training' ? '<p class="muted small">Training time is part of your contracted hours, so it does not count towards overtime.</p>' : ''}
        <p class="muted small" id="calc"></p>`}
       <div style="height:12px"></div><button class="btn full" id="ok">Add</button>
       ${['day', 'evening', 'night'].includes(kind) ? '<div style="height:8px"></div><button class="btn ghost full small" id="setpre">Save these times as my usual ' + P[kind].name + ' shift</button>' : ''}
@@ -358,7 +388,7 @@ function renderUpcoming(C) {
 // ---------------- settings tab ----------------
 function renderSettings() {
   return `<div class="card"><h2>My job</h2>${state.profiles.map((p) => `<div class="line"><div class="row between"><b>From ${fmtDY(p.from)}</b><button class="btn ghost small" data-delp="${p.from}">Remove</button></div>
-    <div class="muted small">${esc(p.level)} · $${p.salary.toLocaleString()} · ${p.fte} FTE · rate $${E.hourlyRate(p).toFixed(2)}/h · CPD $${p.cpdRate}/h</div></div>`).join('')}
+    <div class="muted small">${esc(p.level)} · $${p.salary.toLocaleString()} · ${p.fte} FTE · rate $${E.hourlyRate(p).toFixed(2)}/h · training ${hrs(E.DEFAULT_RULES.fullTimeTrainingHours * p.fte)}/fortnight (automatic) · CPD $${p.cpdRate}/h</div></div>`).join('')}
     <div style="height:8px"></div><button class="btn ghost full" id="addp">+ My level or FTE changed</button></div>
   <div class="card"><h2>Backup</h2><p class="muted small">Your data only lives on this phone. If you delete the app or change phones, it's gone. The app reminds you to back up every week.</p>
     <p class="small"><b>Last backup:</b> ${state.lastBackup ? fmtDY(state.lastBackup.slice(0, 10)) : 'never'}</p>
@@ -367,9 +397,9 @@ function renderSettings() {
     <details><summary>Copy or paste backup as text</summary><textarea id="bk"></textarea><div class="grid2"><button class="btn ghost small" id="cp">Copy</button><button class="btn ghost small" id="ps">Restore from text</button></div></details></div>
   <div class="card"><h2>How pay is worked out</h2><div class="muted small">
     <p>Hourly rate = annual salary ÷ 2,244.6 (43 h × 52.2 weeks), the same as payroll.</p>
-    <p>Normal Pay = 86 h × FTE each fortnight, less any leave. Hours you work above your FTE, up to full-time (76 service hours), are <b>Additional Hours</b> at 100%, plus Training Time of 5/38 of those hours. Hours beyond 76 are <b>Overtime</b>: ×1.25 on weekdays, ×1.5 on weekends, ×1.5 or ×2.5 on public holidays, and ×2 beyond 120 h.</p>
+    <p>Normal Pay = 86 h × FTE each fortnight (76 h service + 10 h training), less any leave. Training time is added automatically from your FTE, so you don't log it. You can change it for one fortnight on the Shifts screen. Hours you work above your FTE, up to full-time (76 service hours), are <b>Additional Hours</b> at 100%, plus Training Time of 5/38 of those hours. Hours beyond 76 are <b>Overtime</b>: ×1.25 on weekdays, ×1.5 on weekends, ×1.5 or ×2.5 on public holidays, and ×2 beyond 120 h.</p>
     <p>Penalties: +25% on weekday hours 7pm–7am, +50% on Saturday and Sunday, +150% on public holidays.</p>
-    <p>Base pay is paid on the Wednesday after the fortnight. Extras come one cycle later, or two if the timesheet was late.</p>
+    <p>Base pay is paid on the Wednesday after the fortnight. Extras come one cycle later. If the timesheet was late, add one more cycle for every 2 weeks late (1–2 weeks: +1 cycle, 3–4 weeks: +2, 5–6 weeks: +3).</p>
     <p>This is a guide built from real payslips and the Medical Practitioners Agreement. It isn't official payroll advice.</p></div></div>
   <div class="card"><button class="btn danger full" id="wipe">Delete all my data</button></div>
   ${storageOK ? '' : '<p class="muted small">⚠ This browser is not letting the app save data. Install it to your home screen.</p>'}`;
@@ -456,6 +486,12 @@ render();
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
+  // When an update installs, reload once so the new version shows straight away.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloaded) { reloaded = true; location.reload(); }
+  });
 }
 </script>
 </body>

@@ -29,6 +29,7 @@ export const DEFAULT_RULES = {
   annualHoursDivisor: 2244.6,   // 43 h x 52.2 weeks: payroll's hourly-rate divisor
   fullTimeServiceHours: 76,     // per fortnight; beyond this = Excess Time (overtime)
   fullTimeTotalHours: 86,       // per fortnight incl. 10 h training time
+  fullTimeTrainingHours: 10,    // training time loaded automatically each fortnight, x FTE
   trainingPerAdditional: 5 / 38,// Training Time accrued on Additional Hours
   ordinaryStart: 7, ordinaryEnd: 19, // weekday ordinary-hours window
   penaltyAfterHours: 0.25, penaltyWeekend: 0.5, penaltyPublicHoliday: 1.5,
@@ -52,6 +53,25 @@ export function fortnightStart(dateStr) {
 }
 export const fortnightEnd = (fnStart) => addDays(fnStart, 13);
 export const payDateFor = (fnStart) => addDays(fnStart, 17); // Wednesday after the fortnight ends
+
+// How many weeks late the timesheet was for a fortnight (0 = on time).
+// Older saves stored `true`, which means late by about a week.
+export function weeksLate(state, fnStart) {
+  const v = (state.lateFortnights || {})[fnStart];
+  if (typeof v === 'number') return Math.max(0, Math.round(v));
+  return v ? 1 : 0;
+}
+// Extras are paid one cycle after the base pay. Each fortnight (2 weeks) of lateness,
+// or part of one, pushes them back one more cycle: 1-2 weeks late = +1 cycle, 3-4 = +2, 5-6 = +3.
+export const extrasPayDateFor = (fnStart, lateWeeks = 0) =>
+  addDays(payDateFor(fnStart), 14 + 14 * Math.ceil(lateWeeks / 2));
+
+// Training time is loaded automatically from the contract FTE (10 h x FTE a fortnight),
+// unless the doctor set a different figure for that fortnight.
+export function trainingHoursFor(state, fnStart, fte, rules = DEFAULT_RULES) {
+  const o = (state.trainingOverrides || {})[fnStart];
+  return typeof o === 'number' && o >= 0 ? o : rules.fullTimeTrainingHours * fte;
+}
 export const isPublicHoliday = (dateStr, overrides = {}) =>
   dateStr in overrides ? !!overrides[dateStr] : dateStr in TAS_PUBLIC_HOLIDAYS;
 
@@ -102,14 +122,18 @@ export function calcFortnight(fnStart, allShifts, state, rules = DEFAULT_RULES) 
   const rate = hourlyRate(profile, rules);
   const fte = profile.fte;
   const cpdRate = profile.cpdRate ?? rules.cpdRate;
-  const late = !!(state.lateFortnights || {})[fnStart];
+  const lateWeeks = weeksLate(state, fnStart);
+  const late = lateWeeks > 0;
   const basePay = payDateFor(fnStart);
-  const extrasPay = addDays(basePay, late ? 28 : 14);
+  const extrasPay = extrasPayDateFor(fnStart, lateWeeks);
   const shifts = allShifts.filter((s) => s.date >= fnStart && s.date <= fnEnd)
     .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
 
-  const contractedTotal = rules.fullTimeTotalHours * fte;      // Normal Pay hours
   const contractedService = rules.fullTimeServiceHours * fte;  // service part of contracted hours
+  const trainingAuto = rules.fullTimeTrainingHours * fte;
+  const trainingHours = trainingHoursFor(state, fnStart, fte, rules); // training loaded on Normal Pay
+  const trainingOverridden = Math.abs(trainingHours - trainingAuto) > 1e-9;
+  const contractedTotal = r2(contractedService + trainingHours); // Normal Pay hours (86 x FTE by default)
 
   // Leave
   const leave = {};
@@ -160,7 +184,8 @@ export function calcFortnight(fnStart, allShifts, state, rules = DEFAULT_RULES) 
   const lwop = leave.lwop || 0;
   const paidLeave = leaveHours - lwop;
   const normalHours = Math.max(0, contractedTotal - leaveHours);
-  add('normal', 'Normal Pay', normalHours, rate, basePay, `${contractedTotal} contracted h (${fte} FTE) minus leave`);
+  add('normal', 'Normal Pay', normalHours, rate, basePay,
+    `${r2(contractedService)} service h + ${r2(trainingHours)} training h (${fte} FTE) minus leave`);
   for (const [k, h] of Object.entries(leave)) if (k !== 'lwop') add('leave', LEAVE_TYPES[k] || 'Leave', h, rate, basePay);
   add('cpd', 'CPD Allow', normalHours + paidLeave, cpdRate, basePay, 'on contracted hours');
   const training = acc.additional * rules.trainingPerAdditional;
@@ -173,9 +198,10 @@ export function calcFortnight(fnStart, allShifts, state, rules = DEFAULT_RULES) 
   for (const [m, h] of Object.entries(acc.ot)) add('ot', `Overtime @ ${m}`, h, rate * +m, extrasPay, 'hours beyond 76 service hours');
 
   return {
-    fnStart, fnEnd, profile, rate, late, basePay, extrasPay, lines,
-    summary: { worked: r2(acc.worked), leave: r2(leaveHours), additional: r2(acc.additional),
-      excess: r2(Object.values(acc.ot).reduce((a, b) => a + b, 0)), contractedTotal, contractedService },
+    fnStart, fnEnd, profile, rate, late, lateWeeks, basePay, extrasPay, lines,
+    summary: { worked: r2(acc.worked), leave: r2(leaveHours), leaveByType: leave, additional: r2(acc.additional),
+      excess: r2(Object.values(acc.ot).reduce((a, b) => a + b, 0)), contractedTotal, contractedService,
+      training: r2(trainingHours), trainingAuto: r2(trainingAuto), trainingOverridden },
     gross: r2(lines.reduce((a, l) => a + l.amount, 0)),
   };
 }

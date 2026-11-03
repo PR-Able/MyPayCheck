@@ -1,8 +1,8 @@
 // Offline cache for My Paycheck. Bump VERSION when files change.
-const VERSION = 'mypaycheck-v1';
+const VERSION = 'mypaycheck-v2';
 const FILES = ['./', './index.html', './engine.js', './parser.js', './pdf.min.mjs', './pdf.worker.min.mjs',
   './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-512.png'];
-self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
+self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
